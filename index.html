@@ -97,10 +97,8 @@
     <p class="stat-sublabel" style="margin-bottom: 1rem;">Export your data to save a backup or import previously saved data</p>
     <div class="export-import-section">
         <button class="btn btn-primary" onclick="exportData()">📥 Export Data</button>
-        <div class="file-input-wrapper">
-            <button class="btn btn-secondary">📤 Import Data</button>
-            <input type="file" id="importFile" accept=".json" onchange="importData(event)">
-        </div>
+        <label for="importFile" class="btn btn-secondary" style="cursor: pointer;">📤 Import Data</label>
+        <input type="file" id="importFile" accept=".json" onchange="importData(event)" style="display: none;">
     </div>
 </div>
             <div class="form-section">
