@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Off Manager</title>
+    <link  rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Time Off Manager</h1>
+            <p class="subtitle">Track your PTO, holidays, and upcoming breaks</p>
+        </header>
+
+        <nav class="nav-tabs">
+            <button class="nav-tab active" onclick="switchView('dashboard')">Dashboard</button>
+            <button class="nav-tab" onclick="switchView('calendar')">Calendar View</button>
+            <button class="nav-tab" onclick="switchView('settings')">Settings</button>
+        </nav>
+
+        <!-- Dashboard View -->
+        <div id="dashboard" class="view active">
+            <div class="stats-grid" id="statsGrid"></div>
+            
+            <div class="form-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2 class="form-title" style="margin: 0;">My PTO Requests</h2>
+                    <button class="btn btn-primary btn-sm" onclick="openAddPTOModal()">+ Add PTO</button>
+                </div>
+                <div class="pto-list" id="ptoList"></div>
+            </div>
+        </div>
+
+        <!-- Calendar View -->
+        <div id="calendar" class="view">
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <h2 class="calendar-title">Calendar View - Planning for <span id="calendarYear">2026</span></h2>
+                </div>
+
+                <div class="calendar-legend">
+                    <div class="legend-item">
+                        <div class="legend-color " style="background: #fef3c7;"></div>
+                        <span>Public Holiday</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #fbcfe8;"></div>
+                        <span>Extended Weekend</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #fef3c7; border: 2px solid #f59e0b;"></div>
+                        <span>Normal Weekend</span>
+                    </div>
+                    <div class="legend-item">
+        <div class="legend-color" style="background: #dbeafe;"></div>
+        <span>PTO (Static)</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color" style="background: #fef3c7;"></div>
+        <span>PTO (Submitted)</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color" style="background: #d1fae5;"></div>
+        <span>PTO (Approved)</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color" style="background: #e5e7eb;"></div>
+        <span>PTO (Used)</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color" style="background: white; border: 3px solid #4f46e5;"></div>
+        <span>Today</span>
+    </div>
+                    
+                    <div class="legend-item">
+    <div class="legend-color" style="background: white; border: 2px solid #f59e0b;"></div>
+    <span>Important Day</span>
+</div>
+<div class="legend-item">
+    <div class="legend-color" style="background: white; position: relative;">
+        <span style="position: absolute; top: -2px; right: -2px; font-size: 0.7rem;">📝</span>
+    </div>
+    <span>Has Note</span>
+</div>
+                </div>
+
+                <div class="months-grid" id="monthsGrid"></div>
+            </div>
+        </div>
+
+        <!-- Settings View -->
+        <div id="settings" class="view">
+            <!-- Add this at the beginning of the settings view, before the PTO Settings section -->
+<div class="form-section">
+    <h2 class="form-title">Backup & Restore</h2>
+    <p class="stat-sublabel" style="margin-bottom: 1rem;">Export your data to save a backup or import previously saved data</p>
+    <div class="export-import-section">
+        <button class="btn btn-primary" onclick="exportData()">📥 Export Data</button>
+        <div class="file-input-wrapper">
+            <button class="btn btn-secondary">📤 Import Data</button>
+            <input type="file" id="importFile" accept=".json" onchange="importData(event)">
+        </div>
+    </div>
+</div>
+            <div class="form-section">
+                <h2 class="form-title">PTO Settings</h2>
+                <div class="form-group">
+                    <label class="form-label">Total PTO Days for 2026</label>
+                    <input type="number" id="ptoDaysInput" class="form-input" placeholder="Enter total PTO days">
+                </div>
+                <button class="btn btn-primary" onclick="savePTODays()">Save PTO Days</button>
+            </div>
+
+            <div class="form-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2 class="form-title" style="margin: 0;">Company Holidays</h2>
+                    <button class="btn btn-primary btn-sm" onclick="openAddHolidayModal()">+ Add Holiday</button>
+                </div>
+                <div class="holiday-list" id="holidayList"></div>
+            </div>
+        </div>
+    </div>
+
+<div id="ptoModal" class="modal">
+    <div class="modal-content">
+        <h3 class="modal-header">Add PTO Request</h3>
+        <div class="form-group">
+            <label class="form-label">Title</label>
+            <input type="text" id="ptoTitle" class="form-input" placeholder="e.g., Vacation, Doctor Appointment">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Start Date</label>
+            <input type="date" id="ptoStartDate" class="form-input">
+        </div>
+        <div class="form-group">
+            <label class="form-label">End Date</label>
+            <input type="date" id="ptoEndDate" class="form-input">
+        </div>
+        <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="ptoHalfDay">
+                <span>Half Day</span>
+            </label>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Note (Optional)</label>
+            <textarea id="ptoNote" class="form-input" rows="3" placeholder="Add any additional details..."></textarea>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-primary" onclick="addPTO()">Add PTO</button>
+            <button class="btn btn-secondary" onclick="closePTOModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+    <!-- Add Holiday Modal -->
+    <div id="holidayModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-header">Add Holiday</h3>
+            <div class="form-group">
+                <label class="form-label">Holiday Name</label>
+                <input type="text" id="holidayName" class="form-input" placeholder="e.g., New Year's Day">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Date</label>
+                <input type="date" id="holidayDate" class="form-input">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="addHoliday()">Add Holiday</button>
+                <button class="btn btn-secondary" onclick="closeHolidayModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Note Modal -->
+<div id="noteModal" class="modal">
+    <div class="modal-content note-modal-content">
+        <h3 class="modal-header">Day Note - <span id="noteModalDate"></span></h3>
+        
+        <!-- Holiday Info Section -->
+        <div id="holidayInfoSection" class="info-section holiday-info-section" style="display: none;">
+            <div class="info-section-title">🎉 Company Holiday</div>
+            <div class="info-section-content" id="holidayInfoContent"></div>
+        </div>
+        
+        <!-- PTO Info Section -->
+        <div id="ptoInfoSection" class="info-section pto-info-section" style="display: none;">
+            <div class="info-section-title">📅 PTO Day</div>
+            <div class="info-section-content" id="ptoInfoContent"></div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Note</label>
+            <textarea id="noteText" class="form-input" rows="4" placeholder="Add a note for this day..."></textarea>
+        </div>
+        <div class="form-group important-checkbox">
+            <label class="checkbox-label">
+                <input type="checkbox" id="noteImportant">
+                <span>Mark as Important Day (birthday, anniversary, etc.)</span>
+            </label>
+        </div>
+        <div id="existingNote" class="note-text" style="display: none;"></div>
+        <div class="modal-actions">
+            <button class="btn btn-primary" onclick="saveNote()">Save Note</button>
+            <button class="btn btn-secondary" onclick="deleteNote()" id="deleteNoteBtn" style="display: none;">Delete Note</button>
+            <button class="btn btn-secondary" onclick="closeNoteModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+    <script src="scripts/script.js">
+    </script>
