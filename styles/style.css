@@ -33,7 +33,8 @@
         }
 
         .nav-tabs {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
             margin-bottom: 2rem;
             border-bottom: 2px solid #e2e8f0;
@@ -593,4 +594,215 @@
 .pto-info-section {
     border-left-color: #10b981;
     background: #ecfdf5;
+}
+
+
+.notes-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.note-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 1px solid #e2e8f0;
+}
+
+.note-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 1rem;
+}
+
+.note-card-date {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.note-card-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.note-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.note-badge-important {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.note-badge-holiday {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.note-badge-pto {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.note-card-content {
+    color: #475569;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.search-filter-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 2rem;
+}
+
+.filter-controls {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.filter-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toggle-setting {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 0.75rem;
+}
+
+.toggle-label {
+    font-weight: 500;
+    color: #1e293b;
+}
+
+.toggle-switch {
+    position: relative;
+    width: 48px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    transition: 0.3s;
+    border-radius: 24px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: #4f46e5;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+}
+
+.countdown-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.rich-text-container {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: white;
+}
+
+.rich-text-container .ql-toolbar {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border: none;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.rich-text-container .ql-container {
+    border: none;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    font-family: inherit;
+    font-size: 0.875rem;
+}
+
+.rich-text-container .ql-editor {
+    min-height: 150px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.rich-text-container .ql-editor.ql-blank::before {
+    color: #94a3b8;
+    font-style: normal;
+}
+
+.note-card-content {
+    color: #475569;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.note-card-content p {
+    margin-bottom: 0.5rem;
+}
+
+.note-card-content ul, .note-card-content ol {
+    margin-left: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.note-card-content strong {
+    font-weight: 600;
+}
+
+.note-card-content em {
+    font-style: italic;
+}
+
+.note-card-content a {
+    color: #4f46e5;
+    text-decoration: underline;
 }

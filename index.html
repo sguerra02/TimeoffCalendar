@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Time Off Manager</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
+    
     <link  rel="stylesheet" href="styles/style.css">
 </head>
 <body>
@@ -13,12 +16,14 @@
             <p class="subtitle">Track your PTO, holidays, and upcoming breaks</p>
         </header>
 
-        <nav class="nav-tabs">
+        <div>
+         <nav class="nav-tabs">
             <button class="nav-tab active" onclick="switchView('dashboard')">Dashboard</button>
             <button class="nav-tab" onclick="switchView('calendar')">Calendar View</button>
+            <button class="nav-tab" onclick="switchView('notes')">Notes</button>
             <button class="nav-tab" onclick="switchView('settings')">Settings</button>
         </nav>
-
+        </div>
         <!-- Dashboard View -->
         <div id="dashboard" class="view active">
             <div class="stats-grid" id="statsGrid"></div>
@@ -88,28 +93,97 @@
                 <div class="months-grid" id="monthsGrid"></div>
             </div>
         </div>
-
+        
+        
+        <div id="notes" class="view">
+    <div class="search-filter-section">
+        <h2 class="form-title" style="margin-bottom: 1rem;">Search & Filter Notes</h2>
+        <div class="form-group" style="margin-bottom: 0;">
+            <input type="text" id="noteSearch" class="form-input" placeholder="Search notes..." oninput="filterNotes()">
+        </div>
+        <div class="filter-controls">
+            <label class="filter-checkbox">
+        <input type="checkbox" id="filterPast" onchange="filterNotes()" checked>
+        <span>Past Notes</span>
+    </label>
+            <label class="filter-checkbox">
+                <input type="checkbox" id="filterImportant" onchange="filterNotes()" checked>
+                <span>Important Days</span>
+            </label>
+            <label class="filter-checkbox">
+                <input type="checkbox" id="filterHolidays" onchange="filterNotes()" checked>
+                <span>Holidays</span>
+            </label>
+            <label class="filter-checkbox">
+                <input type="checkbox" id="filterPTO" onchange="filterNotes()" checked>
+                <span>PTO Days</span>
+            </label>
+            <label class="filter-checkbox">
+                <input type="checkbox" id="filterRegular" onchange="filterNotes()" checked>
+                <span>Regular Notes</span>
+            </label>
+        </div>
+    </div>
+    <div class="notes-grid" id="notesGrid"></div>
+</div>
+      
         <!-- Settings View -->
         <div id="settings" class="view">
-            <!-- Add this at the beginning of the settings view, before the PTO Settings section -->
-<div class="form-section">
-    <h2 class="form-title">Backup & Restore</h2>
-    <p class="stat-sublabel" style="margin-bottom: 1rem;">Export your data to save a backup or import previously saved data</p>
-    <div class="export-import-section">
-        <button class="btn btn-primary" onclick="exportData()">📥 Export Data</button>
-        <label for="importFile" class="btn btn-secondary" style="cursor: pointer;">📤 Import Data</label>
-        <input type="file" id="importFile" accept=".json" onchange="importData(event)" style="display: none;">
+            
+        <div class="form-section">
+            <h2 class="form-title">Dashboard Cards</h2>
+    <p class="stat-sublabel" style="margin-bottom: 1rem;">Choose which countdown cards to display on the dashboard</p>
+    
+    <div class="toggle-setting">
+        <span class="toggle-label">Next Weekend</span>
+        <label class="toggle-switch">
+            <input type="checkbox" id="toggleNextWeekend" onchange="toggleCard('showNextWeekend')" checked>
+            <span class="toggle-slider"></span>
+        </label>
+    </div>
+    
+    <div class="toggle-setting">
+        <span class="toggle-label">Next Holiday</span>
+        <label class="toggle-switch">
+            <input type="checkbox" id="toggleNextHoliday" onchange="toggleCard('showNextHoliday')" checked>
+            <span class="toggle-slider"></span>
+        </label>
+    </div>
+    
+    <div class="toggle-setting">
+        <span class="toggle-label">Next Note</span>
+        <label class="toggle-switch">
+            <input type="checkbox" id="toggleNextNote" onchange="toggleCard('showNextNote')" checked>
+            <span class="toggle-slider"></span>
+        </label>
+    </div>
+    
+    <div class="toggle-setting">
+        <span class="toggle-label">Next PTO</span>
+        <label class="toggle-switch">
+            <input type="checkbox" id="toggleNextPTO" onchange="toggleCard('showNextPTO')" checked>
+            <span class="toggle-slider"></span>
+        </label>
     </div>
 </div>
-            <div class="form-section">
-                <h2 class="form-title">PTO Settings</h2>
-                <div class="form-group">
+            
+        <div class="form-section">
+            <h2 class="form-title">Backup & Restore</h2>
+            <p class="stat-sublabel" style="margin-bottom: 1rem;">Export your data to save a backup or import previously saved data</p>
+            <div class="export-import-section">
+                <button class="btn btn-primary" onclick="exportData()">📥 Export Data</button>
+                <label for="importFile" class="btn btn-secondary" style="cursor: pointer;">📤 Import Data</label>
+                <input type="file" id="importFile" accept=".json" onchange="importData(event)" style="display: none;">
+            </div>
+        </div>
+        <div class="form-section">
+            <h2 class="form-title">PTO Settings</h2>
+            <div class="form-group">
                     <label class="form-label">Total PTO Days for 2026</label>
                     <input type="number" id="ptoDaysInput" class="form-input" placeholder="Enter total PTO days">
                 </div>
                 <button class="btn btn-primary" onclick="savePTODays()">Save PTO Days</button>
             </div>
-
             <div class="form-section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                     <h2 class="form-title" style="margin: 0;">Company Holidays</h2>
@@ -120,7 +194,7 @@
         </div>
     </div>
 
-<div id="ptoModal" class="modal">
+    <div id="ptoModal" class="modal">
     <div class="modal-content">
         <h3 class="modal-header">Add PTO Request</h3>
         <div class="form-group">
@@ -190,7 +264,10 @@
         
         <div class="form-group">
             <label class="form-label">Note</label>
-            <textarea id="noteText" class="form-input" rows="4" placeholder="Add a note for this day..."></textarea>
+            <div class="form-group">
+                 <label class="form-label">Note</label>
+                <div id="noteEditor" class="rich-text-container"></div>
+            </div>
         </div>
         <div class="form-group important-checkbox">
             <label class="checkbox-label">

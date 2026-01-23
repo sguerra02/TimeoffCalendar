@@ -12,13 +12,19 @@ let data = {
                 { date: '2026-12-25', name: 'Christmas' }
             ],
             ptoRequests: [
-    { id: 1, startDate: '2026-02-14', endDate: '2026-02-14', halfDay: false, status: 'approved', title: 'Valentine\'s Day Off', note: '' },
-    { id: 2, startDate: '2026-03-20', endDate: '2026-03-20', halfDay: true, status: 'approved', title: 'Doctor Appointment', note: 'Annual checkup' },
-    { id: 3, startDate: '2026-06-26', endDate: '2026-06-26', halfDay: false, status: 'submitted', title: 'Beach Trip', note: '' }
-],
-            notes: {}, // Add this - format: { 'YYYY-MM-DD': { note: 'text', important: true/false } }
+                { id: 1, startDate: '2026-02-14', endDate: '2026-02-14', halfDay: false, status: 'approved', title: 'Valentine\'s Day Off', note: '' },
+                { id: 2, startDate: '2026-03-20', endDate: '2026-03-20', halfDay: true, status: 'approved', title: 'Doctor Appointment', note: 'Annual checkup' },
+                { id: 3, startDate: '2026-06-26', endDate: '2026-06-26', halfDay: false, status: 'submitted', title: 'Beach Trip', note: '' }
+            ],
+            notes: {},
+            cardSettings: {
+                showNextWeekend: true,
+                showNextHoliday: true,
+                showNextNote: true,
+                showNextPTO: true
+            }
         };
-
+let quillEditor = null;
         // Load data from localStorage
         function loadData() {
             const saved = localStorage.getItem('timeOffData');
@@ -37,15 +43,16 @@ let data = {
 
         // View switching
         function switchView(viewName) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(viewName).classList.add('active');
-            event.target.classList.add('active');
-            
-            if (viewName === 'dashboard') renderDashboard();
-            if (viewName === 'calendar') renderCalendar();
-            if (viewName === 'settings') renderSettings();
-        }
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(viewName).classList.add('active');
+    event.target.classList.add('active');
+    
+    if (viewName === 'dashboard') renderDashboard();
+    if (viewName === 'calendar') renderCalendar();
+    if (viewName === 'notes') renderNotes();
+    if (viewName === 'settings') renderSettings();
+}
 
         // Calculate PTO stats
         function calculatePTOStats() {
@@ -96,48 +103,124 @@ let data = {
 
         // Render dashboard
         function renderDashboard() {
-            const stats = calculatePTOStats();
-            const nextWeekend = getNextWeekend();
-            const nextHoliday = getNextHoliday();
+    const stats = calculatePTOStats();
+    const nextWeekend = getNextWeekend();
+    const nextHoliday = getNextHoliday();
+    const nextNote = getNextNote();
+    const nextPTO = getNextPTO();
+    
+    const statsHTML = `
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #dbeafe; color: #1e40af;">📅</div>
+            <div class="stat-value">${stats.total + data.holidays.length}</div>
+            <div class="stat-label">Total Days Off</div>
+            <div class="stat-sublabel">Available this year</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #d1fae5; color: #065f46;">📅</div>
+            <div class="stat-value">${stats.remaining}</div>
+            <div class="stat-label">PTO Days Remaining</div>
+            <div class="stat-sublabel">${stats.used} used, ${stats.approved} approved</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #fef3c7; color: #92400e;">☀️</div>
+            <div class="stat-value">${data.holidays.length}</div>
+            <div class="stat-label">Public Holidays</div>
+            <div class="stat-sublabel">Company holidays</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #e0e7ff; color: #4f46e5;">📝</div>
+            <div class="stat-value">${Object.keys(data.notes || {}).length}</div>
+            <div class="stat-label">Total Notes</div>
+            <div class="stat-sublabel">Saved notes</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #fce7f3; color: #9f1239;">🎯</div>
+            <div class="stat-value">${stats.pending}</div>
+            <div class="stat-label">Pending PTO</div>
+            <div class="stat-sublabel">Awaiting approval</div>
+        </div>
+    `;
+    
+    document.getElementById('statsGrid').innerHTML = statsHTML;
+    
+    // Render countdown cards
+    let countdownHTML = '';
+    
+    if (data.cardSettings.showNextWeekend) {
+        countdownHTML += `
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #dbeafe; color: #0284c7;">⏰</div>
+                <div class="stat-value">${daysBetween(new Date(), nextWeekend)}</div>
+                <div class="stat-label">Days to Weekend</div>
+                <div class="stat-sublabel">${nextWeekend.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+            </div>
+        `;
+    }
+    
+    if (data.cardSettings.showNextHoliday && nextHoliday) {
+        countdownHTML += `
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #fef3c7; color: #92400e;">🎉</div>
+                <div class="stat-value">${daysBetween(new Date(), new Date(nextHoliday.date))}</div>
+                <div class="stat-label">Next Holiday</div>
+                <div class="stat-sublabel">${nextHoliday.name}</div>
+            </div>
+        `;
+    }
+    
+    if (data.cardSettings.showNextNote && nextNote) {
+        const [year, month, day] = nextNote.date.split('-').map(Number);
+        const noteDate = new Date(year, month - 1, day);
+        countdownHTML += `
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #e0e7ff; color: #4f46e5;">📝</div>
+                <div class="stat-value">${daysBetween(new Date(), noteDate)}</div>
+                <div class="stat-label">Next Note</div>
+                <div class="stat-sublabel">
+                ${nextNote.note.note}
+                <br>
+                ${noteDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+            </div>
+        `;
+    }
+    
+    if (data.cardSettings.showNextPTO && nextPTO) {
+        const [year, month, day] = nextPTO.startDate.split('-').map(Number);
+        const ptoDate = new Date(year, month - 1, day);
+        countdownHTML += `
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #fce7f3; color: #9f1239;">🏖️</div>
+                <div class="stat-value">${daysBetween(new Date(), ptoDate)}</div>
+                <div class="stat-label">Next PTO</div>
+                <div class="stat-sublabel">${nextPTO.title || 'PTO'}</div>
+            </div>
+        `;
+    }
+    
+    // Add countdown section if there are any cards to show
+    if (countdownHTML) {
+        const countdownSection = document.getElementById('countdownSection') || createCountdownSection();
+        countdownSection.innerHTML = `
+            <h2 class="text-2xl font-bold text-gray-900 mb-4" style="font-size: 1.5rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem;">Upcoming</h2>
+            <div class="countdown-grid">${countdownHTML}</div>
+        `;
+    } else {
+        const countdownSection = document.getElementById('countdownSection');
+        if (countdownSection) countdownSection.innerHTML = '';
+    }
+    
+    renderPTOList();
+}
 
-            const statsHTML = `
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: #dbeafe; color: #1e40af;">📅</div>
-                    <div class="stat-value">${stats.total + data.holidays.length}</div>
-                    <div class="stat-label">Total Days Off</div>
-                    <div class="stat-sublabel">Available this year</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: #d1fae5; color: #065f46;">📅</div>
-                    <div class="stat-value">${stats.remaining}</div>
-                    <div class="stat-label">PTO Days Remaining</div>
-                    <div class="stat-sublabel">${stats.used} used, ${stats.approved} approved</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: #fef3c7; color: #92400e;">☀️</div>
-                    <div class="stat-value">${data.holidays.length}</div>
-                    <div class="stat-label">Public Holidays</div>
-                    <div class="stat-sublabel">Company holidays</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: #dbeafe; color: #0284c7;">⏰</div>
-                    <div class="stat-value">${daysBetween(new Date(), nextWeekend)}</div>
-                    <div class="stat-label">Days to Weekend</div>
-                    <div class="stat-sublabel">${nextWeekend.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
-                </div>
-                ${nextHoliday ? `
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: #fef3c7; color: #92400e;">🎉</div>
-                    <div class="stat-value">${daysBetween(new Date(), new Date(nextHoliday.date))}</div>
-                    <div class="stat-label">Next Holiday</div>
-                    <div class="stat-sublabel">${nextHoliday.name}</div>
-                </div>
-                ` : ''}
-            `;
-
-            document.getElementById('statsGrid').innerHTML = statsHTML;
-            renderPTOList();
-        }
+function createCountdownSection() {
+    const section = document.createElement('div');
+    section.id = 'countdownSection';
+    section.style.marginBottom = '2rem';
+    const ptoSection = document.querySelector('.form-section');
+    ptoSection.parentNode.insertBefore(section, ptoSection);
+    return section;
+}
 
         // Render PTO list
         function renderPTOList() {
@@ -304,26 +387,29 @@ html += `<div class="${className}" onclick="openNoteModal('${dateStr}')">${day}<
 
         // Render settings
         function renderSettings() {
-            document.getElementById('ptoDaysInput').value = data.ptoTotal;
-            renderHolidayList();
-        }
+    document.getElementById('ptoDaysInput').value = data.ptoTotal;
+    
+    // Set toggle states
+    if (!data.cardSettings) {
+        data.cardSettings = {
+            showNextWeekend: true,
+            showNextHoliday: true,
+            showNextNote: true,
+            showNextPTO: true
+        };
+    }
+    
+    document.getElementById('toggleNextWeekend').checked = data.cardSettings.showNextWeekend;
+    document.getElementById('toggleNextHoliday').checked = data.cardSettings.showNextHoliday;
+    document.getElementById('toggleNextNote').checked = data.cardSettings.showNextNote;
+    document.getElementById('toggleNextPTO').checked = data.cardSettings.showNextPTO;
+    
+    renderHolidayList();
+}
 
         
         // Render holiday list
         function renderHolidayList() {
-          /*  const html = data.holidays.map((holiday, index) => {
-                const date = new Date(holiday.date);
-                return `
-                    <div class="holiday-item">
-                        <div class="holiday-info">
-                            <div class="holiday-date">${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-                            <div class="holiday-name">${holiday.name}</div>
-                        </div>
-                        <button class="btn btn-secondary btn-sm" onclick="deleteHoliday(${index})">Delete</button>
-                    </div>
-                `;
-            }).join('');*/
-
                     const html = data.holidays.map((holiday, index) => {
     const [year, month, day] = holiday.date.split('-').map(Number);
     const date = new Date(year, month - 1, day);
@@ -356,6 +442,116 @@ html += `<div class="${className}" onclick="openNoteModal('${dateStr}')">${day}<
                 alert('Please enter a valid number of PTO days');
             }
         }
+
+        function renderNotes() {
+    filterNotes();
+}
+
+        function filterNotes() {
+    const searchTerm = document.getElementById('noteSearch').value.toLowerCase();
+    const showPast = document.getElementById('filterPast').checked;
+    const showImportant = document.getElementById('filterImportant').checked;
+    const showHolidays = document.getElementById('filterHolidays').checked;
+    const showPTO = document.getElementById('filterPTO').checked;
+    const showRegular = document.getElementById('filterRegular').checked;
+    
+    if (!data.notes) {
+        document.getElementById('notesGrid').innerHTML = '<p style="text-align: center; color: #64748b;">No notes yet</p>';
+        return;
+    }
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const noteEntries = Object.entries(data.notes)
+        .map(([dateStr, noteData]) => {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            const date = new Date(year, month - 1, day);
+            
+            // Get associated data
+            const holiday = data.holidays.find(h => h.date === dateStr);
+            const pto = data.ptoRequests.find(p => {
+                const [startYear, startMonth, startDay] = p.startDate.split('-').map(Number);
+                const [endYear, endMonth, endDay] = p.endDate.split('-').map(Number);
+                const start = new Date(startYear, startMonth - 1, startDay);
+                const end = new Date(endYear, endMonth - 1, endDay);
+                const current = new Date(year, month - 1, day);
+                return current >= start && current <= end;
+            });
+            
+            return { dateStr, date, noteData, holiday, pto };
+        })
+        .filter(item => {
+            // Filter by past/future
+            if (!showPast && item.date < today) {
+                return false;
+            }
+            
+            // Filter by search term (strip HTML tags for search)
+            if (searchTerm) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = item.noteData.note;
+                const plainText = tempDiv.textContent || tempDiv.innerText || '';
+                if (!plainText.toLowerCase().includes(searchTerm)) {
+                    return false;
+                }
+            }
+            
+            // Filter by type
+            const isImportant = item.noteData.important;
+            const isHoliday = !!item.holiday;
+            const isPTO = !!item.pto;
+            const isRegular = !isImportant && !isHoliday && !isPTO;
+            
+            if (isImportant && !showImportant) return false;
+            if (isHoliday && !showHolidays) return false;
+            if (isPTO && !showPTO) return false;
+            if (isRegular && !showRegular) return false;
+            
+            return true;
+        })
+        .sort((a, b) => a.date - b.date);
+    
+    if (noteEntries.length === 0) {
+        document.getElementById('notesGrid').innerHTML = '<p style="text-align: center; color: #64748b;">No notes match your filters</p>';
+        return;
+    }
+    
+    const html = noteEntries.map(item => {
+        const badges = [];
+        if (item.noteData.important) badges.push('<span class="note-badge note-badge-important">⭐ Important</span>');
+        if (item.holiday) badges.push(`<span class="note-badge note-badge-holiday">🎉 ${item.holiday.name}</span>`);
+        if (item.pto) badges.push(`<span class="note-badge note-badge-pto">📅 ${item.pto.title || 'PTO'}</span>`);
+        
+        return `
+            <div class="note-card" onclick="openNoteModal('${item.dateStr}')">
+                <div class="note-card-header">
+                    <div class="note-card-date">${item.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</div>
+                    <div class="note-card-badges">${badges.join('')}</div>
+                </div>
+                ${item.noteData.note ? `<div class="note-card-content">${item.noteData.note}</div>` : ''}
+            </div>
+        `;
+    }).join('');
+    
+    document.getElementById('notesGrid').innerHTML = html;
+}
+    
+    
+        function toggleCard(setting) {
+    if (!data.cardSettings) {
+        data.cardSettings = {
+            showNextWeekend: true,
+            showNextHoliday: true,
+            showNextNote: true,
+            showNextPTO: true
+        };
+    }
+    data.cardSettings[setting] = !data.cardSettings[setting];
+    saveData();
+    renderDashboard();
+}
+
 
         // Modal functions
         function openAddPTOModal() {
@@ -434,9 +630,9 @@ html += `<div class="${className}" onclick="openNoteModal('${dateStr}')">${day}<
             }
         }
 
-let currentNoteDate = null;
+        let currentNoteDate = null;
 
-function openNoteModal(dateStr) {
+        function openNoteModal(dateStr) {
     currentNoteDate = dateStr;
     const date = new Date(dateStr + 'T12:00:00');
     document.getElementById('noteModalDate').textContent = 
@@ -478,18 +674,47 @@ function openNoteModal(dateStr) {
         document.getElementById('ptoInfoSection').style.display = 'none';
     }
     
+    // Destroy existing Quill instance if it exists
+    if (quillEditor) {
+        quillEditor = null;
+    }
+    
+    // Clear and recreate the editor container
+    const editorContainer = document.getElementById('noteEditor');
+    editorContainer.innerHTML = '<div></div>';
+    
+    // Initialize Quill editor on the inner div
+    quillEditor = new Quill('#noteEditor div', {
+        theme: 'snow',
+        placeholder: 'Add a note for this day...',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline', 'strike'],
+                ['blockquote', 'code-block'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'header': [1, 2, 3, false] }],
+                ['link'],
+                ['clean']
+            ]
+        }
+    });
+    
     // Load existing note if it exists
     if (data.notes && data.notes[dateStr]) {
-        document.getElementById('noteText').value = data.notes[dateStr].note || '';
+        if (data.notes[dateStr].note) {
+            quillEditor.root.innerHTML = data.notes[dateStr].note;
+        }
         document.getElementById('noteImportant').checked = data.notes[dateStr].important || false;
         
         if (data.notes[dateStr].note) {
-            document.getElementById('existingNote').textContent = data.notes[dateStr].note;
+            document.getElementById('existingNote').innerHTML = data.notes[dateStr].note;
             document.getElementById('existingNote').style.display = 'block';
             document.getElementById('deleteNoteBtn').style.display = 'inline-block';
+        } else {
+            document.getElementById('existingNote').style.display = 'none';
+            document.getElementById('deleteNoteBtn').style.display = 'none';
         }
     } else {
-        document.getElementById('noteText').value = '';
         document.getElementById('noteImportant').checked = false;
         document.getElementById('existingNote').style.display = 'none';
         document.getElementById('deleteNoteBtn').style.display = 'none';
@@ -497,14 +722,18 @@ function openNoteModal(dateStr) {
     
     document.getElementById('noteModal').classList.add('active');
 }
-
-function closeNoteModal() {
+        
+        function closeNoteModal() {
     document.getElementById('noteModal').classList.remove('active');
     currentNoteDate = null;
+    if (quillEditor) {
+        quillEditor = null;
+    }
 }
 
-function saveNote() {
-    const noteText = document.getElementById('noteText').value.trim();
+       function saveNote() {
+    const noteHTML = quillEditor.root.innerHTML;
+    const noteText = quillEditor.getText().trim();
     const important = document.getElementById('noteImportant').checked;
     
     if (!data.notes) {
@@ -513,7 +742,7 @@ function saveNote() {
     
     if (noteText || important) {
         data.notes[currentNoteDate] = {
-            note: noteText,
+            note: noteHTML,
             important: important
         };
     } else {
@@ -524,7 +753,51 @@ function saveNote() {
     saveData();
     closeNoteModal();
     renderCalendar();
+    // Refresh notes view if we're on it
+    const notesView = document.getElementById('notes');
+    if (notesView.classList.contains('active')) {
+        renderNotes();
+    }
+} 
+        
+function getNextNote() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (!data.notes) return null;
+    
+    const futureDates = Object.keys(data.notes)
+        .filter(dateStr => {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            const noteDate = new Date(year, month - 1, day);
+            return noteDate >= today;
+        })
+        .sort();
+    
+    if (futureDates.length === 0) return null;
+    
+    return {
+        date: futureDates[0],
+        note: data.notes[futureDates[0]]
+    };
 }
+
+function getNextPTO() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const futurePTO = data.ptoRequests
+        .filter(pto => {
+            const [year, month, day] = pto.startDate.split('-').map(Number);
+            const ptoDate = new Date(year, month - 1, day);
+            return ptoDate >= today;
+        })
+        .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+    
+    return futurePTO.length > 0 ? futurePTO[0] : null;
+}
+
+
 
 function deleteNote() {
     if (confirm('Are you sure you want to delete this note?')) {
